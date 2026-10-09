@@ -390,7 +390,7 @@ export default function SuppliersPage() {
                                 {getRegistrationType(sub)}
                               </span>
                             </div>
-                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                            {/* <div className="text-[10px] text-gray-400 font-mono mt-0.5">
                               Supplying:{" "}
                               <span className="font-medium uppercase">
                                 {String(
@@ -399,7 +399,7 @@ export default function SuppliersPage() {
                                     "Nil",
                                 )}
                               </span>
-                            </div>
+                            </div> */}
                           </td>
                           <td className="px-4 py-4">
                             <span className="text-xs text-gray-600 font-medium max-w-40 block truncate">
