@@ -34,6 +34,7 @@ export function evaluateSupplierSubmission(
   const email = String(data.email || "").trim();
   const country = String(data.country || "India").trim();
   const category = String(data.category || "").trim();
+  const productType = String(data.productType || "").trim();
   const turnover = Number(data.annualTurnover || data.expectedPurchaseValue || 0);
 
   // Country Norms Resolution
@@ -114,6 +115,17 @@ export function evaluateSupplierSubmission(
       sourceValue: category,
     });
   }
+
+  checks.push({
+    id: "basic-productType",
+    category: "COMPANY_INFO",
+    name: "Product Type",
+    status: productType ? "PASSED" : "FAILED",
+    message: productType
+      ? `Primary product or service type recorded: "${productType}"`
+      : "Product Type is mandatory",
+    sourceValue: productType,
+  });
 
   if (template.basicFields.supplyingItem !== false) {
     const items = Array.isArray(data.items)
