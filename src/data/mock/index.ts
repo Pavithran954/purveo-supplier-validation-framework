@@ -667,6 +667,6 @@ export const initialCategories: string[] = [
   "IT",
   "Civil",
   "Manufacturing",
-  "Healthcare",
+  "Healthcare, Pharma & Food Processing",
   "Logistics",
 ];

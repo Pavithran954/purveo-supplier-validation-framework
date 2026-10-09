@@ -272,14 +272,14 @@ export const CATEGORY_DOCUMENTS: DocumentRequirement[] = [
   category(
     "fssai-fda-clearance",
     "FSSAI License / FDA Clearance",
-    "Healthcare",
+    "Healthcare, Pharma & Food Processing",
     "1–5 years",
     "Food or pharmaceutical regulatory clearance.",
   ),
   category(
     "gmp-certificate",
     "GMP Certificate",
-    "Healthcare",
+    "Healthcare, Pharma & Food Processing",
     "2–3 years",
     "Good manufacturing practices certificate.",
   ),
