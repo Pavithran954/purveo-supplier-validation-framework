@@ -79,9 +79,8 @@ const normalizeSupplyingItems = (
 ): SupplyingItem[] => {
   if (Array.isArray(savedDraft.items)) {
     return savedDraft.items
-      .filter(
-        (item): item is Partial<SupplyingItem> =>
-          Boolean(item && typeof item === "object"),
+      .filter((item): item is Partial<SupplyingItem> =>
+        Boolean(item && typeof item === "object"),
       )
       .map((item) => ({
         id:
@@ -1594,10 +1593,7 @@ export function SupplierRegistration({ registrationId }: Props) {
                   {submissionComplete.data.items
                     .filter((item: SupplyingItem) => item.itemName)
                     .map((item: SupplyingItem) => (
-                      <strong
-                        key={item.id}
-                        className="text-gray-950 block"
-                      >
+                      <strong key={item.id} className="text-gray-950 block">
                         {item.itemName} ({item.unitOfMeasurement || "Units"}) ·{" "}
                         {countryNorm.currencySymbol}
                         {Number(item.unitPrice || 0).toLocaleString()}
@@ -1983,27 +1979,7 @@ export function SupplierRegistration({ registrationId }: Props) {
                 </div>
               )}
 
-              {showBasicField("productsServices") && (
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Products &amp; Services Overview
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.productsServices || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        productsServices: e.target.value,
-                      })
-                    }
-                    placeholder="Briefly describe your primary line of goods, solutions, or contract services..."
-                    className="w-full rounded-lg border border-slate-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              )}
-
-              <div className="sm:col-span-2">
+              <div>
                 <label
                   htmlFor="supplier-product-type"
                   className="block text-xs font-semibold text-slate-700 mb-1"
@@ -2028,11 +2004,9 @@ export function SupplierRegistration({ registrationId }: Props) {
                     }))
                   }
                   placeholder="e.g., Food Products, Mechanical Components, Textile Products"
-                  aria-invalid={
-                    formValidationErrors.some((error) =>
-                      error.startsWith("Product Type"),
-                    )
-                  }
+                  aria-invalid={formValidationErrors.some((error) =>
+                    error.startsWith("Product Type"),
+                  )}
                   className={`w-full rounded-lg border p-2.5 text-sm focus:outline-none ${
                     formValidationErrors.some((error) =>
                       error.startsWith("Product Type"),
@@ -2053,6 +2027,26 @@ export function SupplierRegistration({ registrationId }: Props) {
                   </p>
                 )}
               </div>
+
+              {showBasicField("productsServices") && (
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Products &amp; Services Overview
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={formData.productsServices || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        productsServices: e.target.value,
+                      })
+                    }
+                    placeholder="Briefly describe your primary line of goods, solutions, or contract services..."
+                    className="w-full rounded-lg border border-slate-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -2061,7 +2055,9 @@ export function SupplierRegistration({ registrationId }: Props) {
               category={currentEffectiveCategory}
               country={formData.country}
               items={formData.items as SupplyingItem[]}
-              onChange={(items) => setFormData((previous) => ({ ...previous, items }))}
+              onChange={(items) =>
+                setFormData((previous) => ({ ...previous, items }))
+              }
             />
           )}
 
@@ -2153,10 +2149,10 @@ export function SupplierRegistration({ registrationId }: Props) {
                         placeholder={countryNorm.taxPlaceholder}
                         className="w-full rounded-md border border-gray-300 p-2.5 text-xs text-gray-900 uppercase font-mono focus-visible:outline-2 focus-visible:outline-gray-950"
                       />
-                      <span className="text-[11px] text-gray-500 mt-0.5 block">
+                      {/* <span className="text-[11px] text-gray-500 mt-0.5 block">
                         {countryNorm.taxHint} · Verified via authoritative
                         registry.
-                      </span>
+                      </span> */}
                     </div>
 
                     <div>
@@ -2179,10 +2175,10 @@ export function SupplierRegistration({ registrationId }: Props) {
                         }
                         className="w-full rounded-md border border-gray-300 p-2.5 text-xs text-gray-900 uppercase font-mono focus-visible:outline-2 focus-visible:outline-gray-950"
                       />
-                      <span className="text-[11px] text-gray-500 mt-0.5 block">
+                      {/* <span className="text-[11px] text-gray-500 mt-0.5 block">
                         {countryNorm.secondaryTaxHint ||
                           "Issued once and valid for lifetime."}
-                      </span>
+                      </span> */}
                     </div>
                   </>
                 )}
@@ -2223,9 +2219,9 @@ export function SupplierRegistration({ registrationId }: Props) {
                         placeholder={countryNorm.bankRoutingPlaceholder}
                         className="w-full rounded-md border border-gray-300 p-2.5 text-xs text-gray-900 uppercase font-mono focus-visible:outline-2 focus-visible:outline-gray-950"
                       />
-                      <span className="text-[11px] text-gray-500 mt-0.5 block">
+                      {/* <span className="text-[11px] text-gray-500 mt-0.5 block">
                         {countryNorm.bankRoutingHint}
-                      </span>
+                      </span> */}
                     </div>
                   </>
                 )}
@@ -2369,7 +2365,11 @@ export function SupplierRegistration({ registrationId }: Props) {
                       )}
 
                       {field.type === "radio" && (
-                        <div className="space-y-2" role="radiogroup" aria-label={field.label}>
+                        <div
+                          className="space-y-2"
+                          role="radiogroup"
+                          aria-label={field.label}
+                        >
                           {(field.options || []).map((option) => (
                             <label
                               key={option}
@@ -2396,7 +2396,11 @@ export function SupplierRegistration({ registrationId }: Props) {
                       )}
 
                       {field.type === "checkbox" && (
-                        <div className="space-y-2" role="group" aria-label={field.label}>
+                        <div
+                          className="space-y-2"
+                          role="group"
+                          aria-label={field.label}
+                        >
                           {(field.options || []).map((option) => {
                             const selected = Array.isArray(formData[field.id])
                               ? formData[field.id].includes(option)
@@ -2413,7 +2417,9 @@ export function SupplierRegistration({ registrationId }: Props) {
                                   checked={selected}
                                   onChange={(e) =>
                                     setFormData((prev) => {
-                                      const current = Array.isArray(prev[field.id])
+                                      const current = Array.isArray(
+                                        prev[field.id],
+                                      )
                                         ? prev[field.id]
                                         : [];
                                       return {
@@ -2421,7 +2427,8 @@ export function SupplierRegistration({ registrationId }: Props) {
                                         [field.id]: e.target.checked
                                           ? [...current, option]
                                           : current.filter(
-                                              (value: string) => value !== option,
+                                              (value: string) =>
+                                                value !== option,
                                             ),
                                       };
                                     })
@@ -2782,13 +2789,17 @@ export function SupplierRegistration({ registrationId }: Props) {
                                       </label>
                                       <input
                                         type="text"
-                                        value={uploaded.extractedDocNumber || ""}
+                                        value={
+                                          uploaded.extractedDocNumber || ""
+                                        }
                                         onChange={(e) =>
                                           handleUpdateDocFields(docReq.id, {
                                             extractedDocNumber: e.target.value,
                                           })
                                         }
-                                        placeholder={docReq.identifierConfig.placeholder}
+                                        placeholder={
+                                          docReq.identifierConfig.placeholder
+                                        }
                                         className="w-full rounded-md border border-gray-300 bg-white p-2 text-xs text-gray-900 font-mono focus-visible:outline-2 focus-visible:outline-gray-950"
                                       />
                                       <span className="text-[10px] text-gray-500 mt-1 block">
