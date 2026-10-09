@@ -368,12 +368,10 @@ export default function SupplierResultPage() {
               <Package className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
               <span>Supplying Items &amp; Material Specifications</span>
             </h3>
-            {submission.data?.productType && (
-              <p className="text-xs text-gray-600">
-                <span className="font-semibold text-gray-700">Product Type:</span>{" "}
-                {submission.data.productType}
-              </p>
-            )}
+            <p className="text-xs text-gray-600">
+              <span className="font-semibold text-gray-700">Product Type:</span>{" "}
+              {submission.data?.productType || "Not provided"}
+            </p>
             <div className="space-y-2 text-xs">
               {submission.data.items
                 .filter((item: { itemName?: string }) => item.itemName)

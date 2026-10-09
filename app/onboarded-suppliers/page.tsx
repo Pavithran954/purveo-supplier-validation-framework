@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, FileText, X, Users, ShieldAlert } from "lucide-react";
+import {
+  CheckCircle2,
+  FileText,
+  X,
+  Users,
+  ShieldAlert,
+  Filter,
+} from "lucide-react";
 import { RegistrationTemplate, SupplierSubmission } from "@/types/builder";
 import { storage } from "@/src/lib/storage";
 import { STORAGE_KEYS } from "@/src/config/storage";
@@ -16,6 +23,7 @@ export default function OnboardedSuppliersPage() {
   const [revokeTarget, setRevokeTarget] = useState<SupplierSubmission | null>(
     null,
   );
+  const [productTypeFilter, setProductTypeFilter] = useState("ALL");
 
   const loadSuppliers = () => {
     setSuppliers(
@@ -38,6 +46,23 @@ export default function OnboardedSuppliersPage() {
   const getTemplateTitle = (templateId: string) =>
     templates.find((template) => template.id === templateId)?.title ||
     templateId;
+
+  const productTypes = Array.from(
+    new Set(
+      suppliers
+        .map((supplier) => String(supplier.data?.productType || "").trim())
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  const filteredSuppliers =
+    productTypeFilter === "ALL"
+      ? suppliers
+      : suppliers.filter(
+          (supplier) =>
+            String(supplier.data?.productType || "").trim() ===
+            productTypeFilter,
+        );
 
   return (
     <div className="space-y-6 p-6">
@@ -74,24 +99,69 @@ export default function OnboardedSuppliersPage() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50">
-              <tr>
-                {["Supplier", "Category", "Program", "Approved", "Details"].map(
-                  (heading) => (
-                    <th
-                      key={heading}
-                      className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500"
-                    >
-                      {heading}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
+        <div className="space-y-3">
+          <div className="flex items-center justify-end gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3">
+            <Filter
+              className="h-3.5 w-3.5 text-gray-400"
+              aria-hidden="true"
+            />
+            <label
+              htmlFor="product-type-filter"
+              className="text-xs font-semibold text-gray-600"
+            >
+              Product Type
+            </label>
+            <select
+              id="product-type-filter"
+              value={productTypeFilter}
+              onChange={(event) => setProductTypeFilter(event.target.value)}
+              className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus-visible:outline-2 focus-visible:outline-gray-900"
+            >
+              <option value="ALL">All Product Types</option>
+              {productTypes.map((productType) => (
+                <option key={productType} value={productType}>
+                  {productType}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {filteredSuppliers.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-white py-20 text-center">
+              <Users
+                className="mx-auto mb-3 h-8 w-8 text-gray-300"
+                aria-hidden="true"
+              />
+              <h2 className="text-sm font-semibold text-gray-700">
+                No suppliers match this product type
+              </h2>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-gray-200 bg-gray-50">
+                  <tr>
+                    {[
+                      "Supplier",
+                      "Category",
+                      "Product Type",
+                      "Program",
+                      "Approved",
+                      "Details",
+                    ].map(
+                      (heading) => (
+                        <th
+                          key={heading}
+                          className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500"
+                        >
+                          {heading}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
             <tbody className="divide-y divide-gray-100">
-              {suppliers.map((supplier) => (
+              {filteredSuppliers.map((supplier) => (
                 <tr key={supplier.id} className="hover:bg-gray-50">
                   <td className="px-5 py-4">
                     <strong className="block text-sm text-gray-900">
@@ -103,6 +173,9 @@ export default function OnboardedSuppliersPage() {
                   </td>
                   <td className="px-5 py-4 text-xs text-gray-600">
                     {supplier.data?.category || "Nil"}
+                  </td>
+                  <td className="px-5 py-4 text-xs text-gray-600">
+                    {supplier.data?.productType || "Not provided"}
                   </td>
                   <td className="px-5 py-4 text-xs text-gray-600">
                     {getTemplateTitle(supplier.templateId)}
@@ -136,7 +209,9 @@ export default function OnboardedSuppliersPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -271,6 +346,7 @@ function SupplierDetailsDialog({
             values={[
               ["Program", templateTitle],
               ["Category", data.category || "Nil"],
+              ["Product Type", data.productType || "Not provided"],
               ["Country", data.country || "Nil"],
               ["Email", data.email || "Nil"],
               ["Contact Person", data.contactPerson || "Nil"],
@@ -297,7 +373,6 @@ function SupplierDetailsDialog({
                       .join(" | ")
                   : data.supplyingItemName || "Nil",
               ],
-              ["Product Type", data.productType || "Nil"],
               ["Technical Details", data.itemDescription || "Nil"],
               [
                 "Average Unit Price",

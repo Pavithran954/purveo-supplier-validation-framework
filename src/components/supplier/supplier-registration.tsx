@@ -262,7 +262,7 @@ export function SupplierRegistration({ registrationId }: Props) {
       ...itemDrafts,
       [registrationId]: {
         items: formData.items,
-        productType: formData.productType,
+        productType: String(formData.productType || "").trim(),
       },
     });
   }, [
@@ -337,11 +337,6 @@ export function SupplierRegistration({ registrationId }: Props) {
     isCustomCategory || formData.category === "__OTHER__"
       ? customCategoryInput.trim()
       : formData.category;
-  const requiresProductType =
-    currentEffectiveCategory === "Healthcare" ||
-    currentEffectiveCategory === "Healthcare, Pharma & Food" ||
-    currentEffectiveCategory === "Healthcare, Pharma & Food Processing";
-
   // Resolve Country Norms for Dynamic Financial Fields & Document Norms
   const countryNorm = getCountryNorm(formData.country);
 
@@ -1359,8 +1354,8 @@ export function SupplierRegistration({ registrationId }: Props) {
     if (showBasicField("category") && !finalCategory) {
       errors.push("Supplier Category / Industry is mandatory.");
     }
-    if (requiresProductType && !String(formData.productType || "").trim()) {
-      errors.push("Product Type is required for healthcare suppliers.");
+    if (!String(formData.productType || "").trim()) {
+      errors.push("Product Type is required.");
     }
     if (showBasicField("supplyingItem")) {
       (formData.items as SupplyingItem[]).forEach((item, index) => {
@@ -1478,7 +1473,9 @@ export function SupplierRegistration({ registrationId }: Props) {
     // 5. Run Senior Validation Engine
     const report = evaluateSupplierSubmission(template, newSubmission);
     newSubmission.validationScore = report.score;
-    newSubmission.validationStatus = report.status;
+    // Automated validation produces a recommendation only. Onboarding requires
+    // an explicit approval decision from an administrator.
+    newSubmission.validationStatus = "REVIEW_REQUIRED";
     newSubmission.validationReport = report;
 
     // 6. Save in localStorage
@@ -1672,8 +1669,7 @@ export function SupplierRegistration({ registrationId }: Props) {
         <div className="flex items-center gap-2 text-gray-800">
           <Sparkles className="h-4 w-4 text-gray-700" aria-hidden="true" />
           <span>
-            <strong>Testing Assistant:</strong> Pre-fill sample benchmark
-            matching Assignment Page 5 &amp; 6 (Score: 92/100, Expiring Doc).
+            <strong>Testing Assistant:</strong> Pre-fill with sample data.
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -1945,27 +1941,6 @@ export function SupplierRegistration({ registrationId }: Props) {
                 </div>
               )}
 
-              {requiresProductType && (
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    Product Type *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.productType || ""}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        productType: e.target.value,
-                      }))
-                    }
-                    placeholder="e.g. Food Products"
-                    className="w-full rounded-lg border border-slate-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              )}
-
               {showBasicField("address") && (
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -2027,6 +2002,57 @@ export function SupplierRegistration({ registrationId }: Props) {
                   />
                 </div>
               )}
+
+              <div className="sm:col-span-2">
+                <label
+                  htmlFor="supplier-product-type"
+                  className="block text-xs font-semibold text-slate-700 mb-1"
+                >
+                  Product Type *
+                </label>
+                <input
+                  id="supplier-product-type"
+                  type="text"
+                  required
+                  value={formData.productType || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      productType: e.target.value,
+                    }))
+                  }
+                  onBlur={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      productType: e.target.value.trim(),
+                    }))
+                  }
+                  placeholder="e.g., Food Products, Mechanical Components, Textile Products"
+                  aria-invalid={
+                    formValidationErrors.some((error) =>
+                      error.startsWith("Product Type"),
+                    )
+                  }
+                  className={`w-full rounded-lg border p-2.5 text-sm focus:outline-none ${
+                    formValidationErrors.some((error) =>
+                      error.startsWith("Product Type"),
+                    )
+                      ? "border-red-500 bg-red-50 focus:border-red-500"
+                      : "border-slate-300 focus:border-blue-500"
+                  }`}
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Specify the primary type of product or service your company
+                  supplies.
+                </p>
+                {formValidationErrors.some((error) =>
+                  error.startsWith("Product Type"),
+                ) && (
+                  <p className="mt-1 text-xs font-medium text-red-600">
+                    Product Type is required.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -2690,7 +2716,7 @@ export function SupplierRegistration({ registrationId }: Props) {
                                     />
                                     Official Document Cross-Verification Fields
                                   </span>
-                                  {formData.companyName && (
+                                  {/* {formData.companyName && (
                                     <button
                                       type="button"
                                       onClick={() =>
@@ -2703,7 +2729,7 @@ export function SupplierRegistration({ registrationId }: Props) {
                                     >
                                       Copy from Basic Details
                                     </button>
-                                  )}
+                                  )} */}
                                 </div>
 
                                 <div className="grid sm:grid-cols-2 gap-3">

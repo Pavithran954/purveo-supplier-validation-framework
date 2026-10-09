@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   SupplierSubmission,
   HybridRequest,
@@ -9,7 +10,7 @@ import {
 } from "@/types/builder";
 import { storage } from "@/src/lib/storage";
 import { STORAGE_KEYS } from "@/src/config/storage";
-import { getCountryNorm } from "@/src/lib/country-norms";
+import { evaluateSupplierSubmission } from "@/src/lib/validation";
 import {
   initialTemplates,
   initialSubmissions,
@@ -20,27 +21,25 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  ShieldCheck,
   FileText,
   UserCheck,
   Building2,
   Key,
   Filter,
   Search,
-  AlertTriangle,
   Trash2,
   ChevronRight,
   Info,
 } from "lucide-react";
 
 export default function SuppliersPage() {
+  const router = useRouter();
   const [submissions, setSubmissions] = useState<SupplierSubmission[]>([]);
   const [hybridRequests, setHybridRequests] = useState<HybridRequest[]>([]);
   const [templates, setTemplates] = useState<RegistrationTemplate[]>([]);
   const [activeTab, setActiveTab] = useState<"submissions" | "hybrid_requests">(
     "submissions",
   );
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusMessage, setStatusMessage] = useState<{
     type: "success" | "error";
@@ -81,6 +80,35 @@ export default function SuppliersPage() {
     setSubmissions(updated);
     storage.set(STORAGE_KEYS.submissions, updated);
     showStatus("success", `Submission from "${companyName}" has been deleted.`);
+  };
+
+  const handleValidateSubmission = (submission: SupplierSubmission) => {
+    const template =
+      templates.find((item) => item.id === submission.templateId) ||
+      initialTemplates.find((item) => item.id === submission.templateId);
+
+    if (!template) {
+      showStatus(
+        "error",
+        `Unable to validate submission "${submission.id}" because its registration template was not found.`,
+      );
+      return;
+    }
+
+    const report = evaluateSupplierSubmission(template, submission);
+    const updatedSubmission = {
+      ...submission,
+      validationScore: report.score,
+      validationStatus: submission.adminOverrideStatus || "REVIEW_REQUIRED",
+      validationReport: report,
+    };
+    const updatedSubmissions = submissions.map((item) =>
+      item.id === submission.id ? updatedSubmission : item,
+    );
+
+    storage.set(STORAGE_KEYS.submissions, updatedSubmissions);
+    setSubmissions(updatedSubmissions);
+    router.push(`/suppliers/${submission.id}/validation`);
   };
 
   const handleUpdateHybridStatus = (
@@ -136,63 +164,21 @@ export default function SuppliersPage() {
     return type;
   };
 
-  const filteredSubmissions = submissions.filter((sub) => {
-    if (sub.validationStatus === "APPROVED") return false;
+  const pendingSubmissions = submissions.filter(
+    (sub) => sub.validationStatus !== "APPROVED",
+  );
+
+  const filteredSubmissions = pendingSubmissions.filter((sub) => {
     const company = (sub.data?.companyName || "").toLowerCase();
     const id = (sub.id || "").toLowerCase();
     const query = searchQuery.toLowerCase();
     const matchesSearch = company.includes(query) || id.includes(query);
-    if (statusFilter === "ALL") return matchesSearch;
-    return matchesSearch && sub.validationStatus === statusFilter;
+    return matchesSearch;
   });
 
   const pendingCount = hybridRequests.filter(
     (r) => r.status === "PENDING",
   ).length;
-
-  const statusBadge = (status: string) => {
-    if (status === "APPROVED")
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-          <CheckCircle2 className="h-3 w-3" aria-hidden="true" /> Approved
-        </span>
-      );
-    if (status === "REVIEW_REQUIRED")
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-          <AlertTriangle className="h-3 w-3" aria-hidden="true" /> Review
-          Required
-        </span>
-      );
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-red-50 text-red-800 border border-red-200">
-        <XCircle className="h-3 w-3" aria-hidden="true" /> Rejected
-      </span>
-    );
-  };
-
-  const scoreBar = (score: number) => {
-    const color =
-      score >= 75
-        ? "bg-emerald-500"
-        : score >= 50
-          ? "bg-amber-400"
-          : "bg-red-400";
-    return (
-      <div className="flex items-center gap-2">
-        <span className="font-bold text-gray-900 text-sm w-10">{score}</span>
-        <div
-          className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"
-          aria-hidden="true"
-        >
-          <div
-            className={`h-full ${color} rounded-full`}
-            style={{ width: `${score}%` }}
-          />
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6 p-6">
@@ -203,7 +189,7 @@ export default function SuppliersPage() {
             Supplier Management
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Review submissions, compliance scores, and manage hybrid screening
+            Review supplier submissions and manage hybrid screening
             requests.
           </p>
         </div>
@@ -213,7 +199,7 @@ export default function SuppliersPage() {
               Total Submissions
             </div>
             <div className="text-2xl font-black text-gray-950">
-              {submissions.length}
+              {pendingSubmissions.length}
             </div>
           </div>
           <div className="h-10 w-px bg-gray-200" />
@@ -268,7 +254,7 @@ export default function SuppliersPage() {
             <FileText className="h-4 w-4" aria-hidden="true" />
             Submissions
             <span className="ml-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-600">
-              {submissions.length}
+              {pendingSubmissions.length}
             </span>
           </button>
           <button
@@ -315,25 +301,6 @@ export default function SuppliersPage() {
                   className="h-3.5 w-3.5 text-gray-400 shrink-0"
                   aria-hidden="true"
                 />
-                <label
-                  htmlFor="status-filter"
-                  className="text-xs text-gray-500 sr-only"
-                >
-                  Filter by outcome
-                </label>
-                <select
-                  id="status-filter"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-xs rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 focus-visible:outline-2 focus-visible:outline-gray-900"
-                >
-                  <option value="ALL">
-                    All outcomes ({submissions.length})
-                  </option>
-                  <option value="APPROVED">Approved</option>
-                  <option value="REVIEW_REQUIRED">Review Required</option>
-                  <option value="REJECTED">Rejected</option>
-                </select>
               </div>
             </div>
 
@@ -347,7 +314,7 @@ export default function SuppliersPage() {
                   No submissions found
                 </h3>
                 <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-                  {searchQuery || statusFilter !== "ALL"
+                  {searchQuery
                     ? "Try adjusting your search or filter."
                     : "Submissions will appear here once suppliers complete registration forms."}
                 </p>
@@ -383,13 +350,7 @@ export default function SuppliersPage() {
                         scope="col"
                         className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500"
                       >
-                        Score /100
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500"
-                      >
-                        Outcome
+                        Product Type
                       </th>
                       <th
                         scope="col"
@@ -410,17 +371,6 @@ export default function SuppliersPage() {
                       const companyName =
                         sub.data?.companyName || "Unknown Entity";
                       const category = sub.data?.category || "—";
-                      const score = sub.validationScore ?? 0;
-                      const status = sub.validationStatus || "REVIEW_REQUIRED";
-                      const minimumPrice = Number(
-                        sub.data?.unitPriceMin ?? sub.data?.unitPrice ?? 0,
-                      );
-                      const maximumPrice = Number(sub.data?.unitPriceMax ?? minimumPrice);
-                      const averagePrice =
-                        minimumPrice || maximumPrice
-                          ? (minimumPrice + maximumPrice) / 2
-                          : null;
-                      const currency = getCountryNorm(sub.data?.country).currencySymbol;
 
                       return (
                         <tr
@@ -450,17 +400,9 @@ export default function SuppliersPage() {
                                 )}
                               </span>
                             </div>
-                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">
-                              Average Unit Price:{" "}
-                              <span className="font-medium text-gray-600">
-                                {averagePrice === null
-                                  ? "Nil"
-                                  : `${currency}${averagePrice.toLocaleString()}`}
-                              </span>
-                            </div>
                           </td>
                           <td className="px-4 py-4">
-                            <span className="text-xs text-gray-600 font-medium max-w-[160px] block truncate">
+                            <span className="text-xs text-gray-600 font-medium max-w-40 block truncate">
                               {getTemplateTitle(sub.templateId)}
                             </span>
                           </td>
@@ -469,10 +411,11 @@ export default function SuppliersPage() {
                               {category}
                             </span>
                           </td>
-                          <td className="px-4 py-4 min-w-[120px]">
-                            {scoreBar(score)}
+                          <td className="px-4 py-4">
+                            <span className="text-xs text-gray-600 font-medium">
+                              {sub.data?.productType || "Not provided"}
+                            </span>
                           </td>
-                          <td className="px-4 py-4">{statusBadge(status)}</td>
                           <td className="px-4 py-4 text-xs text-gray-400 whitespace-nowrap">
                             {new Date(sub.submittedAt).toLocaleDateString(
                               "en-GB",
@@ -485,17 +428,18 @@ export default function SuppliersPage() {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center justify-end gap-2">
-                              <Link
-                                href={`/suppliers/${sub.id}/result`}
-                                aria-label={`View audit result for ${companyName}`}
+                              <button
+                                type="button"
+                                onClick={() => handleValidateSubmission(sub)}
+                                aria-label={`Validate submission from ${companyName}`}
                                 className="inline-flex items-center gap-1.5 rounded-md bg-gray-950 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800 transition focus-visible:outline-2 focus-visible:outline-gray-900"
                               >
-                                <ShieldCheck
+                                <CheckCircle2
                                   className="h-3.5 w-3.5"
                                   aria-hidden="true"
                                 />
-                                View Audit
-                              </Link>
+                                Validate
+                              </button>
                               <button
                                 onClick={() =>
                                   handleDeleteSubmission(sub.id, companyName)
@@ -518,8 +462,9 @@ export default function SuppliersPage() {
                 </table>
 
                 <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/30 text-xs text-gray-400">
-                  Showing {filteredSubmissions.length} of {submissions.length}{" "}
-                  submission{submissions.length !== 1 ? "s" : ""}
+                  Showing {filteredSubmissions.length} of{" "}
+                  {pendingSubmissions.length} submission
+                  {pendingSubmissions.length !== 1 ? "s" : ""}
                 </div>
               </div>
             )}
